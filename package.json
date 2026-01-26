@@ -1,0 +1,50 @@
+{
+  "name": "@savri/mcp",
+  "version": "0.1.1",
+  "description": "MCP server for Savri analytics - access your website analytics in Claude",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "savri-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=esm --outfile=dist/index.js --external:@modelcontextprotocol/sdk --banner:js=\"#!/usr/bin/env node\"",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "analytics",
+    "savri",
+    "claude",
+    "privacy",
+    "gdpr"
+  ],
+  "author": "Savri <hello@savri.io>",
+  "license": "MIT",
+  "homepage": "https://savri.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/savri-io/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/savri-io/mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5"
+  }
+}
