@@ -1,7 +1,7 @@
 {
   "name": "@savri/mcp",
-  "version": "0.1.1",
-  "description": "MCP server for Savri analytics - access your website analytics in Claude",
+  "version": "0.2.1",
+  "description": "MCP server for Savri analytics - use your analytics data with Claude",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -26,13 +26,9 @@
   ],
   "author": "Savri <hello@savri.io>",
   "license": "MIT",
-  "homepage": "https://savri.io",
   "repository": {
     "type": "git",
     "url": "https://github.com/savri-io/mcp"
-  },
-  "bugs": {
-    "url": "https://github.com/savri-io/mcp/issues"
   },
   "engines": {
     "node": ">=18"
@@ -46,5 +42,9 @@
     "esbuild": "^0.24.0",
     "tsx": "^4.19.0",
     "typescript": "^5"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/savri-io/mcp/issues"
+  },
+  "homepage": "https://savri.io"
 }

@@ -80,7 +80,7 @@ function formatChange(change: number): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
 // ============================================================================
@@ -138,6 +138,126 @@ server.registerTool(
         {
           type: "text",
           text: `Found ${result.meta.total} site(s):\n\n${lines.join("\n\n")}`,
+        },
+      ],
+    };
+  }
+);
+
+// ============================================================================
+// TOOL: savri_create_site
+// ============================================================================
+server.registerTool(
+  "savri_create_site",
+  {
+    title: "Create Site",
+    description:
+      "Add a new website to Savri. Returns the site ID and the tracking snippet " +
+      "to add to the site. The domain cannot be changed afterwards.",
+    inputSchema: {
+      domain: z.string().describe("Domain name (e.g., 'example.com')"),
+      name: z.string().optional().describe("Display name (default: the domain)"),
+    },
+  },
+  async ({ domain, name }) => {
+    const result = await apiRequest<{
+      success: boolean;
+      data: {
+        id: string;
+        domain: string;
+        name: string;
+        verified: boolean;
+        has_data: boolean;
+        tracking_snippet: string;
+      };
+    }>("/sites", {
+      method: "POST",
+      body: { domain, name },
+    });
+
+    const s = result.data;
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `✅ Site created successfully!\n\n` +
+            `Name: ${s.name}\nDomain: ${s.domain}\nID: ${s.id}\n\n` +
+            `Tracking snippet (add to the site's <head>):\n${s.tracking_snippet}`,
+        },
+      ],
+    };
+  }
+);
+
+// ============================================================================
+// TOOL: savri_rename_site
+// ============================================================================
+server.registerTool(
+  "savri_rename_site",
+  {
+    title: "Rename Site",
+    description:
+      "Change the display name of a website. Only the name can be changed - " +
+      "the domain is immutable (create a new site for a new domain).",
+    inputSchema: {
+      site_id: z.string().describe("Site ID (get from savri_list_sites)"),
+      name: z.string().describe("New display name"),
+    },
+  },
+  async ({ site_id, name }) => {
+    const result = await apiRequest<{
+      success: boolean;
+      data: { id: string; domain: string; name: string };
+    }>(`/sites/${site_id}`, {
+      method: "PATCH",
+      body: { name },
+    });
+
+    const s = result.data;
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✅ Site renamed successfully!\n\nName: ${s.name}\nDomain: ${s.domain}\nID: ${s.id}`,
+        },
+      ],
+    };
+  }
+);
+
+// ============================================================================
+// TOOL: savri_delete_site
+// ============================================================================
+server.registerTool(
+  "savri_delete_site",
+  {
+    title: "Delete Site",
+    description:
+      "Permanently delete a website and ALL its analytics data. This cannot be undone. " +
+      "Requires the site's exact domain as confirmation.",
+    inputSchema: {
+      site_id: z.string().describe("Site ID (get from savri_list_sites)"),
+      confirm_domain: z
+        .string()
+        .describe("The site's exact domain, as confirmation that the right site is being deleted"),
+    },
+  },
+  async ({ site_id, confirm_domain }) => {
+    const result = await apiRequest<{
+      success: boolean;
+      data: { id: string; domain: string; name: string; deleted: boolean };
+    }>(`/sites/${site_id}`, {
+      method: "DELETE",
+      params: { confirm: confirm_domain },
+    });
+
+    const s = result.data;
+    return {
+      content: [
+        {
+          type: "text",
+          text: `✅ Site "${s.name}" (${s.domain}) and all its data were permanently deleted.`,
         },
       ],
     };
@@ -234,7 +354,7 @@ server.registerTool(
   async ({ site_id, period, limit }) => {
     const result = await apiRequest<{
       data: Array<{
-        path: string;
+        pathname: string;
         visitors: number;
         pageviews: number;
       }>;
@@ -252,7 +372,7 @@ server.registerTool(
 
     const lines = result.data.map(
       (page, i) =>
-        `${i + 1}. ${page.path}\n   ${formatNumber(page.visitors)} visitors, ${formatNumber(page.pageviews)} pageviews`
+        `${i + 1}. ${page.pathname}\n   ${formatNumber(page.visitors)} visitors, ${formatNumber(page.pageviews)} pageviews`
     );
 
     return {
@@ -278,7 +398,7 @@ server.registerTool(
   async ({ site_id, period, limit }) => {
     const result = await apiRequest<{
       data: Array<{
-        referrer: string;
+        source: string;
         visitors: number;
       }>;
     }>("/stats/referrers", {
@@ -294,7 +414,7 @@ server.registerTool(
     }
 
     const lines = result.data.map(
-      (ref, i) => `${i + 1}. ${ref.referrer || "(direct)"} - ${formatNumber(ref.visitors)} visitors`
+      (ref, i) => `${i + 1}. ${ref.source || "(direct)"} - ${formatNumber(ref.visitors)} visitors`
     );
 
     return {
