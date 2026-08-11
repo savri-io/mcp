@@ -1,5 +1,7 @@
 # @savri/mcp
 
+> **Note: development has moved.** This repository is frozen at v0.2.1. Newer versions of `@savri/mcp` (0.3.0 and up) are developed and published from the Savri platform monorepo, so the code here is out of date. The package on npm is always current: https://www.npmjs.com/package/@savri/mcp. Issues are still welcome here.
+
 MCP (Model Context Protocol) server for Savri analytics. Use your website analytics data directly in Claude Desktop.
 
 ## Setup
