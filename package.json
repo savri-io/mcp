@@ -1,7 +1,7 @@
 {
   "name": "@savri/mcp",
-  "version": "0.2.1",
-  "description": "MCP server for Savri analytics - use your analytics data with Claude",
+  "version": "0.4.0",
+  "description": "MCP server for Savri web analytics and connected Google Search Console and Bing Webmaster Tools reports",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -34,7 +34,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

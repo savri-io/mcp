@@ -21,10 +21,15 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { searchTools, searchAnnotations, searchDescription } from './search-contract.js';
 
 // Configuration
 const API_KEY = process.env.SAVRI_API_KEY;
 const BASE_URL = process.env.SAVRI_API_URL || "https://savri.io/api/v1";
+class ApiError extends Error {
+  constructor(public status: number, public code: string) { super(`API Error (${status}): ${code}`); }
+}
 
 // API client helper
 async function apiRequest<T>(
@@ -49,6 +54,7 @@ async function apiRequest<T>(
   }
 
   const response = await fetch(url.toString(), {
+    signal: AbortSignal.timeout(30000),
     method: options.method || "GET",
     headers: {
       Authorization: `Bearer ${API_KEY}`,
@@ -58,8 +64,9 @@ async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(`API Error (${response.status}): ${error.error || response.statusText}`);
+    const error: unknown = await response.json().catch(() => null);
+    const message = error && typeof error === 'object' && 'error' in error && typeof error.error === 'string' ? error.error : 'unavailable';
+    throw new ApiError(response.status, message);
   }
 
   return response.json() as Promise<T>;
@@ -80,8 +87,25 @@ function formatChange(change: number): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.2.0",
+  version: "0.4.0",
 });
+
+for (const tool of searchTools) {
+  server.registerTool(`savri_get_${tool.provider}_${tool.report}`, {
+    title: tool.title, description: searchDescription(tool), inputSchema: z.object(tool.shape).strict(), annotations: searchAnnotations,
+  }, async (input: unknown): Promise<CallToolResult> => {
+    const parsed = z.object(tool.shape).strict().safeParse(input);
+    if (!parsed.success) return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'invalid_request', status: 400 }) }] };
+    try {
+      const result = await apiRequest<Record<string, unknown>>(`/stats/${tool.provider}/${tool.report}`, {
+        params: Object.fromEntries(Object.entries(parsed.data).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])),
+      });
+      return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] };
+    } catch (error) {
+      return { isError: true, content: [{ type: 'text', text: JSON.stringify(error instanceof ApiError ? { error: error.code, status: error.status } : { error: 'unavailable', status: 503 }) }] };
+    }
+  });
+}
 
 // ============================================================================
 // TOOL: savri_list_sites
@@ -199,7 +223,8 @@ server.registerTool(
     title: "Rename Site",
     description:
       "Change the display name of a website. Only the name can be changed - " +
-      "the domain is immutable (create a new site for a new domain).",
+      "the domain is immutable (create a new site for a new domain). " +
+      "Requires the site owner's account: invited team members cannot rename sites.",
     inputSchema: {
       site_id: z.string().describe("Site ID (get from savri_list_sites)"),
       name: z.string().describe("New display name"),
@@ -235,7 +260,9 @@ server.registerTool(
     title: "Delete Site",
     description:
       "Permanently delete a website and ALL its analytics data. This cannot be undone. " +
-      "Requires the site's exact domain as confirmation.",
+      "Requires the site's exact domain as confirmation. Invited team members can only " +
+      "delete sites that they alone have access to; deleting a shared site requires " +
+      "the site owner's account.",
     inputSchema: {
       site_id: z.string().describe("Site ID (get from savri_list_sites)"),
       confirm_domain: z
@@ -442,6 +469,7 @@ server.registerTool(
       data: Array<{
         country: string;
         country_code: string;
+        country_name?: string | null;
         visitors: number;
       }>;
     }>("/stats/countries", {
@@ -456,9 +484,10 @@ server.registerTool(
       return { content: [{ type: "text", text: "No country data available for this period." }] };
     }
 
-    const lines = result.data.map(
-      (c, i) => `${i + 1}. ${c.country || c.country_code} - ${formatNumber(c.visitors)} visitors`
-    );
+    const lines = result.data.map((c, i) => {
+      const label = c.country_name ? `${c.country_name} (${c.country})` : c.country || c.country_code;
+      return `${i + 1}. ${label} - ${formatNumber(c.visitors)} visitors`;
+    });
 
     return {
       content: [{ type: "text", text: `🌍 Visitor Countries:\n\n${lines.join("\n")}` }],
@@ -514,6 +543,79 @@ server.registerTool(
         {
           type: "text",
           text: `🏷️ Event Properties (${result.meta.total}):\n\n${lines.join("\n\n")}`,
+        },
+      ],
+    };
+  }
+);
+
+// ============================================================================
+// TOOL: savri_get_property_breakdown
+// ============================================================================
+server.registerTool(
+  "savri_get_property_breakdown",
+  {
+    title: "Get Property Value Breakdown",
+    description:
+      "Get the top values for a registered event property, optionally filtered by event name. " +
+      "For example, a property holding search terms returns the most common queries, and a property " +
+      "holding product IDs returns the most frequent products. Property and event names vary per site: " +
+      "use savri_list_properties to see what is registered before querying.",
+    inputSchema: {
+      site_id: z.string().describe("Site ID"),
+      property: z.string().describe("Registered property name (e.g., 'query', 'product_id')"),
+      event: z.string().optional().describe("Filter by event name (e.g., 'site_search')"),
+      period: z.enum(["7d", "30d", "90d"]).optional().describe("Time period (default: 30d)"),
+      limit: z.number().optional().describe("Number of values to return (default: 20, max: 100)"),
+    },
+  },
+  async ({ site_id, property, event, period, limit }) => {
+    const result = await apiRequest<{
+      data: Array<{
+        value: string;
+        events: number;
+        visitors: number;
+        percentage: number;
+      }>;
+      meta: {
+        property: string;
+        event: string | null;
+        period: string;
+        total_events: number;
+      };
+    }>("/properties/breakdown", {
+      params: {
+        site_id,
+        property,
+        ...(event ? { event } : {}),
+        period: period || "30d",
+        limit: String(limit || 20),
+      },
+    });
+
+    if (result.data.length === 0) {
+      const scope = result.meta.event ? ` for event "${result.meta.event}"` : "";
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No values recorded for property "${result.meta.property}"${scope} in this period.`,
+          },
+        ],
+      };
+    }
+
+    const scope = result.meta.event ? ` for event "${result.meta.event}"` : "";
+    const lines = result.data.map(
+      (row, i) =>
+        `${i + 1}. ${row.value} - ${formatNumber(row.events)} events (${formatNumber(row.visitors)} visitors, ${row.percentage}%)`
+    );
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `📊 Top values for "${result.meta.property}"${scope} (${result.meta.period}):\n\n${lines.join("\n")}`,
         },
       ],
     };

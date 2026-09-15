@@ -1,14 +1,21 @@
-# savri-mcp (ARKIVERAT - gör inga kodändringar här)
+# Savri MCP, publik distribution
 
-Detta repo är fryst på v0.2.1 (2026-07-13). Källkoden för @savri/mcp bor
-sedan 2026-08-09 i analytics-value-repot:
+Källkod och produktutveckling bor i `../analytics-value/packages/mcp`.
+Detta repo är distributionsytan för `@savri/mcp` och GitHub-ärenden.
+Arbeta på main med selektiv staging. Gör verktygsändringar i källrepot,
+synka därefter uttryckligen beställda paketfiler hit.
 
-- `~/projekt/analytics-value/packages/mcp` - npm-paketet (@savri/mcp,
-  bygger dist/ med esbuild, npm-publish gatas av Aaron)
-- `~/projekt/analytics-value/lib/mcp/` - webb-MCP:n som deployas med
-  produkten
+## Status 2026-09-15, Codex
 
-Alla verktygsändringar görs där, i BÅDA implementationerna. Detta repo
-finns bara kvar som publik yta för npm-länken (github.com/savri-io/mcp)
-och issue-rapporter. Dyker en uppgift upp som pekar hit: öppna en session
-i analytics-value i stället.
+På Aarons fortsatta Google/Bing-releaseorder ersätts den gamla frysningen
+på 0.2.1 med distribution av **0.4.0**. Åtta nya sökläsningar, 27 verktyg.
+Fem källfiler selektivt synkade, låsfil uppdaterad. Savri-URL-/manifestmappning
+enligt källrepots releaseskript. LICENSE och .gitignore bevarade.
+
+Artefaktbygge, TypeScript, paketinnehåll (fyra filer), låsfil och verklig
+stdio-discovery (27 verktyg, 0.4.0) verifierade. Paketets SHA-1:
+`09af964ca01bdf9d1897a0940453626cd2756946`.
+Git-push/tagg, npm-publicering och installerad versions riktiga läsprov
+redovisas efter utförande i samma status och i källrepots
+`docs/impl/gsc-mcp-bwt-analys-2026-09-15.md`.
+Todoist: befintlig `6hWHc3Wm3G2FrwqM`, öppen 22 september.
