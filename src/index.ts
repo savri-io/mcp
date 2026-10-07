@@ -88,7 +88,7 @@ function formatChange(change: number): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.5.0",
+  version: "0.5.1",
 });
 
 for (const tool of guidedStartTools) {

@@ -32,7 +32,10 @@ The Savri tools will now be available in Claude.
 
 ## Available Tools
 
-### Guided start (0.5.0)
+### Guided start (0.5.1)
+
+Version 0.5.1 correctly labels profile replacement/clearing and replacement of
+prior feedback as destructive writes so the host can request explicit approval.
 
 Thirty tools include `savri_get_setup_status`, `savri_save_business_profile`,
 and `savri_record_start_feedback`. Start with the selected site's measurement
