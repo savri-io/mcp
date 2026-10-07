@@ -23,6 +23,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { searchTools, searchAnnotations, searchDescription } from './search-contract.js';
+import { guidedStartTools } from './guided-start-contract.js';
 
 // Configuration
 const API_KEY = process.env.SAVRI_API_KEY;
@@ -87,8 +88,24 @@ function formatChange(change: number): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.4.0",
+  version: "0.5.0",
 });
+
+for (const tool of guidedStartTools) {
+  server.registerTool(tool.name, { title: tool.title, description: tool.description, inputSchema: tool.schema, annotations: tool.annotations },
+    async (input: unknown): Promise<CallToolResult> => {
+      const parsed = tool.schema.safeParse(input);
+      if (!parsed.success) return { isError: true, content: [{ type: 'text', text: '{"error":"invalid_request"}' }] };
+      try {
+        const result = await apiRequest<Record<string, unknown>>('/setup', tool.scope === 'read'
+          ? { params: Object.fromEntries(Object.entries(parsed.data).filter(([, v]) => v !== undefined).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : String(v)])) }
+          : { method: 'POST', body: { action: tool.name === 'savri_save_business_profile' ? 'profile' : 'feedback', ...parsed.data } });
+        return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] };
+      } catch (error) {
+        return { isError: true, content: [{ type: 'text', text: JSON.stringify(error instanceof ApiError ? { error: error.code, status: error.status } : { error: 'unavailable', status: 503 }) }] };
+      }
+    });
+}
 
 for (const tool of searchTools) {
   server.registerTool(`savri_get_${tool.provider}_${tool.report}`, {

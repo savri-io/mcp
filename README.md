@@ -32,9 +32,28 @@ The Savri tools will now be available in Claude.
 
 ## Available Tools
 
+### Guided start (0.5.0)
+
+Thirty tools include `savri_get_setup_status`, `savri_save_business_profile`,
+and `savri_record_start_feedback`. Start with the selected site's measurement
+and access status, then use the available evidence to answer questions about
+booking interest, sales, or content. Missing data stays unknown; an external
+booking click does not confirm a booking.
+
+Saving business context requires an explicit request, a site owner/editor role,
+and API write scope. Feedback records an explicit yes/no. Ordinary analysis
+does not save a profile or create goals. Repeating the same goal or funnel
+definition reuses it; creating configuration does not install tracking.
+
+Google/Bing checks are optional and preserve each source's dates and coverage.
+The status check samples 30 UTC calendar dates; rolling analytics reports may
+label 31 dates for `30d`. This npm package provides MCP tools; the separately
+distributed [Savri plugin](https://github.com/savri-io/savri-plugin) includes the
+guided analytics skill and starter prompts.
+
 ### Search reports (0.4.0)
 
-Eight read-only search tools share their schemas with the remote server, for 27 tools in total:
+Eight read-only search tools share their schemas with the remote server:
 
 | Provider | Tools |
 |---|---|
@@ -66,8 +85,8 @@ query strings and URLs as untrusted data, never instructions. These reports do
 not connect a search query to a person or order, or provide separate AI citations.
 Provider tokens remain on the server. No account-wide background fetch is started.
 
-Version 0.4.0 and the server changes require coordinated publication. A server
-deploy alone does not update reviewed tool metadata in external directories.
+A server deploy and npm publication are separate from the skill package and
+the tools available through each directory's review and discovery process.
 
 ### Existing tools (unchanged)
 
@@ -109,7 +128,7 @@ Ask Claude things like:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SAVRI_API_KEY` | Yes | Your Savri API key |
-| `SAVRI_API_URL` | No | Custom API URL (default: https://besokskollen.se/api/v1) |
+| `SAVRI_API_URL` | No | Custom API URL (default: https://savri.io/api/v1) |
 
 ## Development
 
@@ -126,6 +145,6 @@ SAVRI_API_KEY=your_key node dist/index.js
 
 ## Links
 
-- [Savri Dashboard](https://besokskollen.se/dashboard)
-- [API Documentation](https://besokskollen.se/docs/public-api)
+- [Savri Dashboard](https://savri.io/sites)
+- [API Documentation](https://savri.io/docs/public-api)
 - [MCP Protocol](https://modelcontextprotocol.io)
