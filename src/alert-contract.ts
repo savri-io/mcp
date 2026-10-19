@@ -49,4 +49,4 @@ export const alertTools = [
     description: 'Disable the named rule only on the user request. Cancels queued messages. A message already submitted to the mail provider cannot be recalled. If account billing is locked, use the dashboard to read and disable rules; remote MCP cannot access locked sites.' },
   { name: 'savri_delete_alert', title: 'Delete a disabled alert', schema: alertDisableInput, scope: 'write' as const,
     description: 'Only on an explicit user request, delete a disabled rule and its history. An enabled rule or a message currently being submitted must be stopped first.' },
-].map(tool => ({ ...tool, annotations: { readOnlyHint: tool.scope === 'read', destructiveHint: tool.name === 'savri_delete_alert', idempotentHint: tool.scope === 'read', openWorldHint: tool.scope === 'write' } }));
+].map(tool => ({ ...tool, annotations: { readOnlyHint: tool.scope === 'read', destructiveHint: ['savri_disable_alert', 'savri_delete_alert'].includes(tool.name), idempotentHint: tool.scope === 'read', openWorldHint: tool.scope === 'write' } }));
