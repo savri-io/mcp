@@ -1,6 +1,6 @@
 {
   "name": "@savri/mcp",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "MCP server for Savri web analytics and connected Google Search Console and Bing Webmaster Tools reports",
   "type": "module",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
     "privacy",
     "gdpr"
   ],
-  "author": "Savri <hello@savri.io>",
+  "author": "Value Unlimited",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -24,6 +24,9 @@ import { z } from "zod";
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { searchTools, searchAnnotations, searchDescription } from './search-contract.js';
 import { guidedStartTools } from './guided-start-contract.js';
+import { affiliateReportTool } from './affiliate-contract.js';
+import { alertTools } from './alert-contract.js';
+import { trafficDescription, trafficInput, supportsCompletedTraffic } from './traffic-contract.js';
 
 // Configuration
 const API_KEY = process.env.SAVRI_API_KEY;
@@ -80,7 +83,8 @@ function formatNumber(n: number): string {
   return n.toString();
 }
 
-function formatChange(change: number): string {
+function formatChange(change: number | null): string {
+  if (change === null) return 'comparison unavailable';
   const sign = change >= 0 ? "+" : "";
   return `${sign}${change}%`;
 }
@@ -88,8 +92,35 @@ function formatChange(change: number): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.5.1",
+  version: "0.6.0",
 });
+
+server.registerTool(affiliateReportTool.name, { title: affiliateReportTool.title, description: affiliateReportTool.description,
+  inputSchema: affiliateReportTool.schema, annotations: affiliateReportTool.annotations }, async (input: unknown): Promise<CallToolResult> => {
+  const parsed = affiliateReportTool.schema.safeParse(input);
+  if (!parsed.success) return { isError: true, content: [{ type: 'text', text: '{"error":"invalid_request"}' }] };
+  try {
+    const result = await apiRequest<Record<string, unknown>>('/affiliate/report', { params: Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+    return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] };
+  } catch (error) {
+    return { isError: true, content: [{ type: 'text', text: JSON.stringify(error instanceof ApiError ? { error: error.code } : { error: 'unavailable' }) }] };
+  }
+});
+
+for (const tool of alertTools) {
+  server.registerTool(tool.name, { title: tool.title, description: tool.description, inputSchema: tool.schema, annotations: tool.annotations },
+    async (input: unknown): Promise<CallToolResult> => {
+      const parsed = tool.schema.safeParse(input);
+      if (!parsed.success) return { isError: true, content: [{ type: 'text', text: '{"error":"invalid_request"}' }] };
+      try {
+        const result = await apiRequest<Record<string, unknown>>('/alerts', tool.name === 'savri_get_alerts'
+          ? { params: { site_id: parsed.data.site_id } }
+          : { method: 'POST', body: { action: tool.name === 'savri_preview_alert' ? 'preview' : tool.name === 'savri_save_alert' ? 'save' : tool.name === 'savri_delete_alert' ? 'delete' : 'disable', ...parsed.data } });
+        return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] };
+      } catch (error) { return { isError: true, content: [{ type: 'text', text: JSON.stringify(error instanceof ApiError ? { error: error.code } : { error: 'unavailable' }) }] }; }
+    });
+}
 
 for (const tool of guidedStartTools) {
   server.registerTool(tool.name, { title: tool.title, description: tool.description, inputSchema: tool.schema, annotations: tool.annotations },
@@ -315,32 +346,42 @@ server.registerTool(
   "savri_get_stats",
   {
     title: "Get Stats Overview",
-    description:
-      "Get visitor statistics for a website. " +
-      "Returns visitors, pageviews, sessions, bounce rate, and daily breakdown. " +
-      "Use compare=true to see changes vs previous period.",
-    inputSchema: {
-      site_id: z.string().describe("Site ID (get from savri_list_sites)"),
-      period: z.enum(["7d", "30d", "90d"]).optional().describe("Time period (default: 30d)"),
-      compare: z.boolean().optional().describe("Compare with previous period"),
-    },
+    description: trafficDescription,
+    inputSchema: trafficInput,
   },
-  async ({ site_id, period, compare }) => {
+  async ({ site_id, period, compare, completed_days }) => {
+    if (completed_days) {
+      try {
+        const { data } = await apiRequest<{ data: Record<string, unknown> }>('/stats/overview', {
+          params: { site_id, period: period || '30d', compare: String(!!compare), completed_days: 'true' },
+        });
+        if (!supportsCompletedTraffic(data, site_id, period, !!compare)) {
+          return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'unsupported_server_contract',
+            message: 'This server does not return the required completed-day contract. Deploy Savri server 1.3.0 or newer before using completed_days.' }) }] };
+        }
+        return { structuredContent: data, content: [{ type: 'text', text: JSON.stringify(data) }] };
+      } catch (error) {
+        if (!(error instanceof ApiError)) throw error;
+        return { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: error.code, status: error.status }) }] };
+      }
+    }
     const result = await apiRequest<{
       data: {
         period: { from: string; to: string };
         visitors: number;
         pageviews: number;
         sessions: number;
-        bounce_rate: number;
-        pages_per_session: number;
+        bounce_rate: number | null;
+        pages_per_session: number | null;
         comparison?: {
           period: { from: string; to: string };
-          visitors: { value: number; change: number };
-          pageviews: { value: number; change: number };
-          sessions: { value: number; change: number };
-          bounce_rate: { value: number; change: number };
+          visitors: { value: number; change: number | null };
+          pageviews: { value: number; change: number | null };
+          sessions: { value: number; change: number | null };
+          bounce_rate: { value: number | null; change: number | null };
+          coverage?: { expected_days: number; observed_days: number };
         };
+        coverage?: { expected_days: number; observed_days: number; includes_today: boolean };
         daily: Array<{ date: string; visitors: number; pageviews: number }>;
       };
     }>("/stats/overview", {
@@ -353,19 +394,21 @@ server.registerTool(
 
     const d = result.data;
     let text = `📊 Stats for ${d.period.from} to ${d.period.to}\n\n`;
+    if (d.coverage) text += `UTC daily aggregates: ${d.coverage.observed_days}/${d.coverage.expected_days} dates observed. Missing dates are unknown, not zero.${d.coverage.includes_today ? ' Today is provisional.' : ''}\n`;
+    if (d.comparison?.coverage) text += `Previous period: ${d.comparison.period.from} to ${d.comparison.period.to}, ${d.comparison.coverage.observed_days}/${d.comparison.coverage.expected_days} dates observed. Previous bounce rate: ${d.comparison.bounce_rate.value === null ? 'unavailable' : `${d.comparison.bounce_rate.value}%`}.\n`;
 
     if (d.comparison) {
       text += `Visitors:     ${formatNumber(d.visitors)} (${formatChange(d.comparison.visitors.change)})\n`;
       text += `Pageviews:    ${formatNumber(d.pageviews)} (${formatChange(d.comparison.pageviews.change)})\n`;
       text += `Sessions:     ${formatNumber(d.sessions)} (${formatChange(d.comparison.sessions.change)})\n`;
-      text += `Bounce Rate:  ${d.bounce_rate}% (${formatChange(d.comparison.bounce_rate.change)})\n`;
+      text += `Bounce Rate:  ${d.bounce_rate === null ? 'unavailable' : `${d.bounce_rate}%`} (${formatChange(d.comparison.bounce_rate.change)})\n`;
     } else {
       text += `Visitors:     ${formatNumber(d.visitors)}\n`;
       text += `Pageviews:    ${formatNumber(d.pageviews)}\n`;
       text += `Sessions:     ${formatNumber(d.sessions)}\n`;
-      text += `Bounce Rate:  ${d.bounce_rate}%\n`;
+      text += `Bounce Rate:  ${d.bounce_rate === null ? 'unavailable' : `${d.bounce_rate}%`}\n`;
     }
-    text += `Pages/Session: ${d.pages_per_session}\n`;
+    text += `Pages/Session: ${d.pages_per_session ?? 'unavailable'}\n`;
 
     // Show daily trend (simplified sparkline)
     if (d.daily.length > 0) {

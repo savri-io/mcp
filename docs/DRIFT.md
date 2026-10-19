@@ -1,5 +1,17 @@
 # Distribution history
 
+## 2026-10-19, Codex: reviewed 0.6.0 distribution
+
+Aaron authorized publication of stage 07. This release adds completed UTC
+traffic windows with coverage, affiliate reports and five alert tools (36 total).
+It validates the server contract and rejects older servers that ignore the new
+period request. Missing comparisons are explained instead of rendered as +null%.
+Value Unlimited remains the public publisher. Source is synchronized from the
+reviewed analytics-value package; only the established public URL/manifest mapping
+is applied. Build, types and actual stdio/live checks are required before npm.
+Publication uses publicera.mjs; npm follows the verified server deployment.
+No customer configuration, P1 or stage 08 is changed. Publication receipts follow.
+
 ## 2026-10-07, Codex: guided start 0.5.1 published
 
 Published `@savri/mcp` 0.5.0, then the required compatibility patch 0.5.1.

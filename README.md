@@ -32,12 +32,38 @@ The Savri tools will now be available in Claude.
 
 ## Available Tools
 
-### Guided start (0.5.1)
+### Portfolio, affiliate and alerts (0.6.0)
+
+The 0.6.0 bundle has 36 tools, including `savri_get_affiliate_report`
+and five alert tools: get, preview, save, disable and delete. It shares the
+same contracts as hosted server 1.3.0. Check the installed package version
+when upgrading from an older release.
+
+Use `savri_get_stats` with `completed_days:true` and `compare:true` to read
+completed UTC dates and equal previous dates. Results contain exact daily
+counts, both coverage objects, absolute/relative change and quality warnings.
+Missing days do not prove zero; a zero baseline has no relative percentage.
+Server 1.3.0 also uses completed 7/30/90-day windows for old stats calls, with the legacy field names and rounding. The 0.6.0 client rejects an older server that ignores completed_days. Older 0.5.1 installations format genuinely unavailable changes as +null%; upgrade to 0.6.0 for correct missing-data text. Do not equate page/source reports or
+Google/Bing coverage with completed Savri dates.
+
+For portfolio analysis, use explicit authorized site selections and saved
+profiles via setup `view:settings`; do not infer business type from a domain.
+Each workspace's payer rights apply separately. There is no extra three-site
+MCP cap. Report any unread portion of a selection. Affiliate reports keep
+currencies, statuses, exact/assessed/unknown matching and EPC coverage separate.
+Alert activation requires an explicit request, the recipient's own consent,
+edit/write permission and Growth+ (affiliate alerts: Business/Enterprise with
+existing affiliate access). A read-only request never changes configuration.
+
+This bundle requires hosted server 1.3.0 or later. Package version,
+hosted version and a client's discovered tool snapshot are separate evidence.
+
+### Guided start (previous 0.5.1)
 
 Version 0.5.1 correctly labels profile replacement/clearing and replacement of
 prior feedback as destructive writes so the host can request explicit approval.
 
-Thirty tools include `savri_get_setup_status`, `savri_save_business_profile`,
+The previous thirty-tool release included `savri_get_setup_status`, `savri_save_business_profile`,
 and `savri_record_start_feedback`. Start with the selected site's measurement
 and access status, then use the available evidence to answer questions about
 booking interest, sales, or content. Missing data stays unknown; an external
@@ -131,7 +157,7 @@ Ask Claude things like:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SAVRI_API_KEY` | Yes | Your Savri API key |
-| `SAVRI_API_URL` | No | Custom API URL (default: https://savri.io/api/v1) |
+| `SAVRI_API_URL` | No | Custom API URL (default: https://besokskollen.se/api/v1) |
 
 ## Development
 
@@ -148,6 +174,6 @@ SAVRI_API_KEY=your_key node dist/index.js
 
 ## Links
 
-- [Savri Dashboard](https://savri.io/sites)
-- [API Documentation](https://savri.io/docs/public-api)
+- [Savri Dashboard](https://besokskollen.se/dashboard)
+- [API Documentation](https://besokskollen.se/docs/public-api)
 - [MCP Protocol](https://modelcontextprotocol.io)
