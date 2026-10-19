@@ -1,5 +1,23 @@
 # Distribution history
 
+## 2026-10-19, Codex: npm 0.6.0 published and verified
+
+npm latest is 0.6.0. Aaron completed the separate security-key steps for
+login and publishing. Source e23bb7566cc23ed131494c70d716395c104d0a1c is on
+origin/main. Registry tarball SHA256:
+b30091f0353fcf4674c00b0cde8f4aceb6d0c76894882dd9cb5f316f62155a72.
+The published local tarball equals the downloaded registry archive, and the
+registry-installed bundle equals the archive. Four files; Value Unlimited.
+
+An isolated install of registry 0.6.0 discovered all 36 tools. Five live
+reads passed against deployed server 1.3.0: completed/comparable traffic on
+two authorized owner sites, setup, affiliate report and empty alert list.
+No business mutations. Exact evidence is in analytics-value stage 07:
+07-npm-registry-integrity.json and 07-npm-registry-live.json.
+No Git tag was pushed outside the mandated publishing tool. npm delivery is
+complete; public ChatGPT skill review is a separate remaining distribution step.
+P1 is off and stage 08 was not started. No further npm action is needed.
+
 ## 2026-10-19, Codex: reviewed 0.6.0 distribution
 
 Aaron authorized publication of stage 07. This release adds completed UTC
