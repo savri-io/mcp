@@ -1,5 +1,19 @@
 # Distribution history
 
+## 2026-11-05, Codex: 0.6.1 published and verified
+
+npm **0.6.1 latest** is published as Value Unlimited. Source **15f1131**
+was published through publicera.mjs. The registry archive exactly matches the
+reviewed tarball (SHA-1 24312d41b77a4ccdc00b4096ede215691d5af5d5).
+A fresh registry install reports 0.6.1 and 36 tools, and passes authorized
+production site-list and setup-status reads without business writes.
+Remote 1.3.1 is READY on both domains; actual Claude.ai and ChatGPT candidate
+journeys passed. The separate Ads release is excluded. No remaining action.
+
+Evidence: analytics-value/docs/impl/ai-onboarding-2026-11-05/fixes/delivery-status.md.
+Onboarding Todoist 6hwGqQ4JRQ7CRxrv completed and reread. No further action
+within the scoped onboarding release; no new recurring follow-up.
+
 ## 2026-11-05, Codex: onboarding 0.6.1 release candidate prepared
 
 Prepared from analytics-value's scoped candidate c1a2f8a0, excluding the
