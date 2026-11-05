@@ -27,10 +27,12 @@ import { guidedStartTools } from './guided-start-contract.js';
 import { affiliateReportTool } from './affiliate-contract.js';
 import { alertTools } from './alert-contract.js';
 import { trafficDescription, trafficInput, supportsCompletedTraffic } from './traffic-contract.js';
+import { listSitesDescription, createSiteDescription, onboardingPlatforms, onboardingInstructions, emptySitesHelp, siteInstallationHelp, siteMeasurementSummary, siteTrackingSnippet } from './onboarding-contract.js';
 
 // Configuration
 const API_KEY = process.env.SAVRI_API_KEY;
 const BASE_URL = process.env.SAVRI_API_URL || "https://savri.io/api/v1";
+const BASE_ORIGIN = new URL(BASE_URL).origin;
 class ApiError extends Error {
   constructor(public status: number, public code: string) { super(`API Error (${status}): ${code}`); }
 }
@@ -43,7 +45,7 @@ async function apiRequest<T>(
   if (!API_KEY) {
     throw new Error(
       "SAVRI_API_KEY environment variable is required. " +
-      "Get your API key at https://savri.io/settings/api-keys"
+      "Get your API key at https://besokskollen.se/dashboard/settings/api"
     );
   }
 
@@ -92,8 +94,8 @@ function formatChange(change: number | null): string {
 // Create MCP server
 const server = new McpServer({
   name: "savri",
-  version: "0.6.0",
-});
+  version: "0.6.1",
+}, { instructions: onboardingInstructions });
 
 server.registerTool(affiliateReportTool.name, { title: affiliateReportTool.title, description: affiliateReportTool.description,
   inputSchema: affiliateReportTool.schema, annotations: affiliateReportTool.annotations }, async (input: unknown): Promise<CallToolResult> => {
@@ -162,9 +164,7 @@ server.registerTool(
   "savri_list_sites",
   {
     title: "List Sites",
-    description:
-      "List all websites you have access to in Savri. " +
-      "Use include_stats=true to get visitor/pageview counts for the last 30 days.",
+    description: listSitesDescription,
     inputSchema: {
       include_stats: z.boolean().optional().describe("Include 30-day stats summary"),
     },
@@ -180,7 +180,7 @@ server.registerTool(
         group: { name: string; emoji: string | null } | null;
         stats_30d?: { visitors: number; pageviews: number };
       }>;
-      meta: { total: number };
+      meta: { total: number; can_create_site?: boolean };
     }>("/sites", {
       params: { include_stats: include_stats ? "true" : "false" },
     });
@@ -190,7 +190,7 @@ server.registerTool(
         content: [
           {
             type: "text",
-            text: "No sites found. Add a site at https://savri.io/sites",
+            text: emptySitesHelp(BASE_ORIGIN, result.meta.can_create_site),
           },
         ],
       };
@@ -202,7 +202,8 @@ server.registerTool(
       const stats = site.stats_30d
         ? ` - ${formatNumber(site.stats_30d.visitors)} visitors, ${formatNumber(site.stats_30d.pageviews)} pageviews (30d)`
         : "";
-      return `${status} ${group}${site.name} (${site.domain})${stats}\n  ID: ${site.id}`;
+      const help = siteMeasurementSummary(BASE_ORIGIN, site.id, site.has_data, site.verified);
+      return `${status} ${group}${site.name} (${site.domain})${stats}\n  ID: ${site.id}${help ? `\n  ${help}` : ''}`;
     });
 
     return {
@@ -223,15 +224,14 @@ server.registerTool(
   "savri_create_site",
   {
     title: "Create Site",
-    description:
-      "Add a new website to Savri. Returns the site ID and the tracking snippet " +
-      "to add to the site. The domain cannot be changed afterwards.",
+    description: createSiteDescription,
     inputSchema: {
       domain: z.string().describe("Domain name (e.g., 'example.com')"),
       name: z.string().optional().describe("Display name (default: the domain)"),
+      platform: z.enum(onboardingPlatforms).optional().describe('Known website platform; reuse it if supplied, otherwise omit'),
     },
   },
-  async ({ domain, name }) => {
+  async ({ domain, name, platform }) => {
     const result = await apiRequest<{
       success: boolean;
       data: {
@@ -255,7 +255,8 @@ server.registerTool(
           text:
             `✅ Site created successfully!\n\n` +
             `Name: ${s.name}\nDomain: ${s.domain}\nID: ${s.id}\n\n` +
-            `Tracking snippet (add to the site's <head>):\n${s.tracking_snippet}`,
+            `Tracking snippet (follow the platform guide):\n${siteTrackingSnippet(BASE_ORIGIN, s.id, platform, s.tracking_snippet)}\n\n` +
+            siteInstallationHelp(BASE_ORIGIN, s.id, platform),
         },
       ],
     };

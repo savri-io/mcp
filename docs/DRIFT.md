@@ -1,5 +1,21 @@
 # Distribution history
 
+## 2026-11-05, Codex: onboarding 0.6.1 release candidate prepared
+
+Prepared from analytics-value's scoped candidate c1a2f8a0, excluding the
+separate Ads work. Default API origin remains savri.io. The package guides
+an empty account through a first authorized website, installation, developer
+handoff or demo and distinguishes a created site from received measurement.
+Existing sites with data keep compact responses; denied workspace access is
+an error. Shared platform snippets now typecheck within the package.
+
+Typecheck, bundle and npm pack passed: version 0.6.1, 36 tools. Tarball
+SHA-1 24312d41b77a4ccdc00b4096ede215691d5af5d5. npm login confirmed as
+valueunlimited. Not yet published: actual Claude.ai candidate acceptance,
+scoped hosted release and live verification precede npm publication.
+Next: Codex completes those checks, uses publicera.mjs for source and
+publishes/installs the exact registry artifact. No further push mandate needed.
+
 ## 2026-10-19, Codex: npm 0.6.0 published and verified
 
 npm latest is 0.6.0. Aaron completed the separate security-key steps for

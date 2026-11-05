@@ -6,7 +6,7 @@ MCP (Model Context Protocol) server for Savri analytics, including connected Goo
 
 ### 1. Get your API key
 
-Go to [Savri Dashboard > Settings > API](https://savri.io/settings/api-keys) and create an API key with `read` scope (add `write` scope if you want to create goals/funnels).
+Go to [Savri Dashboard > Settings > API](https://savri.io/settings/api-keys) and create an API key with `read` scope (add `write` scope if you want to add sites or create goals/funnels).
 
 ### 2. Configure Claude Desktop
 
@@ -29,6 +29,12 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ### 3. Restart Claude Desktop
 
 The Savri tools will now be available in Claude.
+
+## First website (0.6.1)
+
+Connected with no site yet? Ask for help getting started. Savri guides you to an own or authorized client website, a developer handoff, or the public demo. A URL alone does not reveal another site's traffic. When you ask to add a site, provide the domain and platform; the reply includes its real ID, installation snippet and guide. After installation, check received visits and their timestamp. Account connection, site creation, script detection and received data are separate states. A controlled test visit does not prove organic traffic or customer activation.
+
+Version 0.6.1 uses 36 tools and hosted server 1.3.1.
 
 ## Available Tools
 
